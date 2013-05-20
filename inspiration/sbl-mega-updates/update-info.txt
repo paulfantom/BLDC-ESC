@@ -1,0 +1,23 @@
+Infos zu den Updates! 
+-------------------------
+
+Die hier zur Verfügung gestellten Updates beinhalten nicht die gesamte Microcontroller-Software.
+Die Erstprogrammierung kann daher nicht auf diese Weise durchgeführt werden.
+Eine bestimmte Update-Datei (Endung "upd") beinhaltet immer nur die Unterschiede zwischen zwei Versionen.
+Mit einer Datei namens "V6005-6006.upd" kann z. B. von der Version 6005 auf 6006 upgedatet werden.
+
+Die Versionsnummer, z. B. "V6006", setzt sich aus zwei Komponenten zusammen. 
+"60" ist die Kennung für den SBL-Mega und "06" ist die eigentliche Release-Version.
+Welche Version bei einem bestimmten SBL-Mega installiert ist, 
+lässt sich mit dem PC-Programm feststellen.
+
+Eine neue Firmware ist eine Zeit lang als Betaversion zu betrachten.
+Trotz ausgiebiger Tests lassen sich Softwarefehler nicht immer vermeiden.
+Daher enthaelt die Zip-Datei auch immer ein Update zurueck auf die letzte bzw. alte Version.
+Falls sich z. B. das Update "V6005-6006.upd" als fehlerhaft erweist, 
+kann man mit "V6006-6005.upd" wieder zurueckgehen auf den letzten Stand. 
+
+Das Einspielen der neuen Software darf nicht abgebrochen werden (Gefahr von Datenverlust), 
+kann aber beliebig oft wiederholt werden.
+
+

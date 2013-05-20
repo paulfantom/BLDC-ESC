@@ -1,0 +1,268 @@
+// Date: Jan. 3rd, 2011
+// Author: Takao
+// This is for "Arduino Nano ATMega328" Towerpro sensored Brushless motor(DV8V,1.5A no-load) drive test SKETCH program with all N-ch 
+//driver.
+//
+int Hall_Orange_In = 7;
+int Hall_White_In = 6;
+int Hall_Green_In = 5;
+unsigned Propo_Pulse_In = 0;
+unsigned char DRIVE_STATE;
+unsigned char SENSE_CODE;
+unsigned char PREV_SENSE_CODE;
+int PWM_Pin = 3;      // PWM(2048uS frame, duty 255:1) outputat at digital pin 3
+int Propo_in = 2;  // digital propo interrupt input-pin 2
+signed int PWM_Duty;
+unsigned char PWM_ON;
+boolean counting = false;
+unsigned long time1;
+unsigned long time2;
+unsigned char PWM_Status;
+boolean rpmdirection;
+//
+void setup()
+{
+  pinMode(Hall_Orange_In, INPUT);   // set the digital pin as output:     
+  pinMode(Hall_White_In, INPUT); 
+  pinMode(Hall_Green_In, INPUT);   // sets the pin as MOSFET drive output
+  digitalWrite(Hall_Orange_In, HIGH);       // turn on pullup resistors
+  digitalWrite(Hall_White_In, HIGH);       // turn on pullup resistors
+  digitalWrite(Hall_Green_In, HIGH);       // turn on pullup resistors 
+
+  PORTB &= 0xc0;
+  DDRB = 255;  // all push-pull output on portB
+  pinMode(Propo_in, INPUT);  // sets the pin as input
+  pinMode(PWM_Pin, OUTPUT);   // sets the pin as output
+  attachInterrupt(0, Propo_Pulse_Width_Counting, CHANGE);  // Digital Propo in pin2
+  //    Serial.begin(115200);
+}
+//
+void loop()
+{
+  /*PORTB &= 0xc0;
+   delayMicroseconds(10);
+   //PORTB |=0x07;	// xx00 0111 UH(D13,PB5)="L", VH(D12,PB4)="L", WH(D11,PB3)="L", WL(D10,PB2) ="H", VL(D9,PB1)="H", UL(D8,PB0)="H"   
+   PORTB |=0x20;	// xx00 0111 UH(D13,PB5)="L", VH(D12,PB4)="L", WH(D11,PB3)="L", WL(D10,PB2) ="H", VL(D9,PB1)="H", UL(D8,PB0)="H" 
+   delay (1);
+   PORTB &= 0xc0;
+   delayMicroseconds(10);
+   PORTB |=0x01;
+   delay (1);
+   */
+  SENSE_CODE = (PIND & 0xe0);
+  if (( PREV_SENSE_CODE != SENSE_CODE ) || (Propo_Pulse_In<10))
+  {
+    Spin_Free ();  
+    delayMicroseconds(10);//MOSFET switching time
+  }
+  PREV_SENSE_CODE = SENSE_CODE;
+  delayMicroseconds(10);  //Arduino BUG
+  //  Serial.print(PWM_ON,OCT);
+  //  Serial.print("");    
+  {
+    if ((PWM_ON > 0) && (rpmdirection == 1))
+    {
+      CCW ();
+    }
+    else
+    {
+      if (( PWM_ON > 0) && (rpmdirection == 0))
+      {
+        CW ();
+      }    
+    }
+  }//
+  if (counting == false)  // print once after the propo pulse width has been measured only.
+  {
+    PWM_Duty = (time2-time1-1000)>>1; // Get about integer length duty control data for byte length limitaion PWM function
+    if ((PWM_Duty < 280) && (PWM_Duty > 220))  // DEAD BAND setting
+    {
+      PWM_ON = 0; 
+      digitalWrite (PWM_Pin,PWM_ON);  // Keep off at throttle near off
+      Spin_Free ();  
+      delayMicroseconds(10);//MOSFET switching time  
+      Braking ();
+    }
+    else
+    {
+      if ( PWM_Duty > 250 )  // upper limit as 100% duty ON setting
+      {
+        rpmdirection = 1;      
+        if ( PWM_Duty > 504 )
+        {
+          PWM_Duty = 505;
+        }
+        PWM_ON = (PWM_Duty-250);
+      }
+      else
+      {
+        if (PWM_Duty < 250)
+        {
+          rpmdirection = 0;
+          if (PWM_Duty<0)
+          {
+            PWM_Duty=0;
+          }
+          PWM_ON = (255-PWM_Duty);
+        }
+      }
+      if (PWM_ON>0)
+      {
+        analogWrite(PWM_Pin,PWM_ON);  // 2mS fram. analogWrite values from 0 to 255 x 8uS, zero is invalid as keeping duty as before.
+      }  
+    }
+    counting = true;
+  }
+  PWM_Status = PIND & 0x08;  // read PWM status on Pin3 
+  if (PWM_Status == 0)
+  {
+    Spin_Free ();
+  }
+}
+//
+void CCW ()
+{  
+  switch (PREV_SENSE_CODE)
+  {
+  case 0x60:
+    {
+      State1_On ();
+      break;
+    }
+    //
+  case 0x40:
+    {
+      State2_On ();
+      break;
+    } 
+    //
+  case 0xc0:
+    {
+      State3_On ();
+      break;
+    }
+    //
+  case 0x80:
+    {
+      State4_On ();
+      break;
+    }
+    //
+  case 0xa0:
+    {
+      State5_On ();
+      break;
+    }
+    //
+  case 0x20:
+    {
+      State6_On ();
+    }
+  } 
+}
+//
+void CW ()
+{  
+  switch (PREV_SENSE_CODE)
+  {
+  case 0x60:
+    {
+      State4_On ();
+      break;
+    }
+    //
+  case 0x40:
+    {
+      State5_On ();
+      break;
+    } 
+    //
+  case 0xc0:
+    {
+      State6_On ();
+      break;
+    }
+    //
+  case 0x80:
+    {
+      State1_On ();
+      break;
+    }
+    //
+  case 0xa0:
+    {
+      State2_On ();
+      break;
+    }
+    //
+  case 0x20:
+    {
+      State3_On ();
+    }
+  } 
+}
+//--------------------------------------
+// Motor drive each state control 
+//--------------------------------------
+void State1_On ()	// W open	
+{
+  PORTB |=0x22;	// xx10 0010 UH(D13,PB5)="H",VH(D12,PB4)="L", WH(D11,PB3)="L", WL(D10,PB2) ="L", VL(D9,PB1)="H",  UL(D8,PB0)="L"
+}
+//
+void State2_On (void)	
+{				
+  PORTB |= 0x24;	// xx10 0100  UH(D13,PB5)="H", VH(D12,PB4)="L", WH(D11,PB3)="L", WL(D10,PB2) ="H", VL(D9,PB1)="L", UL(D8,PB0)="L"	
+}
+//
+void State3_On (void)	
+{				
+  PORTB |=0x14;	// xx01 0100 UH(D13,PB5)="L", VH(D12,PB4)="H", WH(D11,PB3)="L", WL(D10,PB2) ="H", VL(D9,PB1)="L", UL(D8,PB0)="L"	
+}
+//	
+void State4_On (void)	
+{				
+  PORTB |=0x11;	// xx01 0010  UH(D13,PB5)="L", VH(D12,PB4)="H", WH(D11,PB3)="L", WL(D10,PB2) ="L", VL(D9,PB1)="L", UL(D8,PB0)="H"	
+}
+//
+void State5_On (void)	
+{				
+  PORTB |=0x09;	// xx00 1001 UH(D13,PB5)="L", VH(D12,PB4)="L", WH(D11,PB3)="H", WL(D10,PB2) ="L", VL(D9,PB1)="L", UL(D8,PB0)="H"
+}
+//
+void State6_On (void)	
+{				
+  PORTB |=0x0a;	// xx00 1001 UH(D13,PB5)="L", VH(D12,PB4)="L", WH(D11,PB3)="H", WL(D10,PB2) ="L", VL(D9,PB1)="H", UL(D8,PB0)="L"
+}
+//
+void Spin_Free (void) // All output MOSFETs off
+{
+  PORTB &= 0xc0;	// xx00 0000 UH(D13,PB5)="L", VH(D12,PB4)="L", WH(D11,PB3)="L", WL(D10,PB2) ="L", UL(D8,PB0)="L", VL(D9,PB1)="L"
+  //	PCA0CPH2 = 0;	// 101009 Watch dog timer off.
+}
+//
+void Braking (void)	
+{				
+  Spin_Free (); // All MOSFTEs off DOES NOT WORK on Toshiba IGBT unit
+  PORTB |=0x07;	// xx00 0111 UH(D13,PB5)="L", VH(D12,PB4)="L", WH(D11,PB3)="L", WL(D10,PB2) ="H", VL(D9,PB1)="H", UL(D8,PB0)="H"
+}
+//
+void Propo_Pulse_Width_Counting()
+{
+  if ( digitalRead(Propo_in) == HIGH)
+  {
+    //  Serial.print("H");
+    time1 = micros();
+  }
+  else
+  {
+    //  Serial.print("L");
+    time2 = micros();
+    Propo_Pulse_In ++;  // TX On?
+    if (Propo_Pulse_In>10)
+    {
+      Propo_Pulse_In = 10;
+    }
+    counting = false;
+  }
+}
+// Program End
