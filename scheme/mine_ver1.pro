@@ -1,8 +1,8 @@
-update=Sat 18 May 2013 08:35:08 PM CEST
+update=Tue 21 May 2013 09:54:59 PM CEST
 last_client=eeschema
 [eeschema]
 version=1
-LibDir=/home/paulfantom/Development/KiCAD_libraries
+LibDir=/home/paulfantom/Development/KiCAD-libraries
 NetFmt=1
 HPGLSpd=20
 HPGLDm=15

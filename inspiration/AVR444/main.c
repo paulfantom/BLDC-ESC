@@ -1,85 +1,69 @@
-// This file has been prepared for Doxygen automatic documentation generation.
-/*! \file ********************************************************************
-*
-* Atmel Corporation
-*
-* - File              : main.c
-* - Compiler          : IAR EWAAVR 2.28a/3.10c
-*
-* - Support mail      : avr@atmel.com
-*
-* - Supported devices : ATmega48/88/168
-*
-* - AppNote           : AVR444 - Sensorless control of three-phase brushless
-*                       DC motors with ATmega48.
-*
-* - Description       : Example of how to use the ATmega48 for sensorless
-*                       control of a three phase brushless DC motor.
-*
-* $Revision: 1.1 $
-* $Date: Monday, October 10, 2005 11:15:46 UTC $
-*****************************************************************************/
-
 #include "BLDC.h"
-
-#include <ioavr.h>
-#include <inavr.h>
-
+ 
+#include <avr/io.h>
+#include <avr/interrupt.h>
+#include <avr/wdt.h>
+ 
+ 
 //! Array of power stage enable signals for each commutation step.
 unsigned char driveTable[6];
-
+ 
 //! Array of ADC channel selections for each commutation step.
 unsigned char ADMUXTable[6];
-
+ 
 //! Array holding the intercommutation delays used during startup.
 unsigned int startupDelays[STARTUP_NUM_COMMUTATIONS];
-
+ 
 /*! \brief Filtered commutation timer variable and speed indicator.
  *  This value equals half the time of one commutation step. It is filtered
  *  through an IIR filter, so the value stored is not the most recent measuremnt.
  *  The variable is stored in registers R14-R15 for quicker access.
  */
-__regvar __no_init volatile unsigned int filteredTimeSinceCommutation @14;
-
+//volatile unsigned int filteredTimeSinceCommutation = 14;
+register volatile unsigned int filteredTimeSinceCommutation asm("r14");
+ 
 /*! \brief The power stage enable signals that will be output to the motor drivers
  *  at next commutation.
  *
  *  This variable holds the pattern of enable signals that will be output to the
  *  power stage at next commutation. It is stored in register R13 for quick access.
  */
-__regvar __no_init volatile unsigned char nextDrivePattern @13;
-
+//volatile unsigned char nextDrivePattern =13;
+register volatile unsigned char nextDrivePattern asm("r13");
+ 
 /*! \brief Polarity of the expected zero crossing.
  *
  *  The polarity of the expected zero crossing.
  *  Could be eiter \ref EDGE_FALLING or \ref EDGE_RISING.
  */
-__regvar __no_init volatile unsigned char zcPolarity @ 12;
-
+//volatile unsigned char zcPolarity = 12;
+register volatile unsigned char zcPolarity asm("r12");
+ 
 /*! \brief The commutation step that starts at next commutation.
  *
  *  The commutation step that starts at next commutation. This is used to keep
  *  track on where in the commutation cycle we are. Stored in register R11 for
  *  quick access
  */
-__regvar __no_init volatile unsigned char nextCommutationStep @11;
-
+//volatile unsigned char nextCommutationStep =11;
+register volatile unsigned char nextCommutationStep asm("r11");
+ 
 //! ADC reading of external analog speed reference.
 volatile unsigned char speedReferenceADC;
-
+ 
 //! ADC reading of shunt voltage.
 volatile unsigned char shuntVoltageADC = 0;
-
+ 
 //! ADC reading of the known external reference voltage.
 volatile unsigned char referenceVoltageADC;
-
+ 
 //! Flag that specifies whether a new external speed reference and a motor speed measurement is available.
 volatile unsigned char speedUpdated = FALSE;
-
+ 
 //! Flag that specifies whether a new current measurement is available.
 volatile unsigned char currentUpdated = FALSE;
-
-
+ 
+ 
 /*! \brief Program entry point.
  *
  *  Main initializes all peripheral units used and calls the startup procedure.
@@ -94,21 +78,22 @@ void main(void)
   InitADC();
   MakeTables();
   InitAnalogComparator();
-
+ 
   // Run startup procedure.
   StartMotor();
-
+ 
   // Turn on watchdog for stall-detection.
   WatchdogTimerEnable();
-  __enable_interrupt();
-
+  sei();
+ 
   for(;;)
   {
     PWMControl();
   }
+  return;
 }
-
-
+ 
+ 
 /*! \brief Examines the reset source and acts accordingly.
  *
  *  This function is called early in the program to disable watchdog timer and
@@ -123,19 +108,19 @@ void main(void)
  */
 static void ResetHandler(void)
 {
-  __eeprom unsigned static int restartAttempts;
+   unsigned static int restartAttempts;
   // Temporary variable to avoid unnecessary reading of volatile register MCUSR.
   unsigned char tempMCUSR;
-
+ 
   tempMCUSR = MCUSR;
   MCUSR = tempMCUSR & ~((1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF));
-
+ 
   // Reset watchdog to avoid false stall detection before the motor has started.
-  __disable_interrupt();
-  __watchdog_reset();
+  cli();
+  wdt_reset();
   WDTCSR |= (1 << WDCE) | (1 << WDE);
   WDTCSR = 0x00;
-
+ 
   // Examine the reset source and take action.
   switch (tempMCUSR & ((1 << WDRF) | (1 << BORF) | (1 << EXTRF) | (1 << PORF)))
   {
@@ -146,10 +131,10 @@ static void ResetHandler(void)
       // Do something here. E.g. wait for a button to be pressed.
       for (;;)
       {
-
+			break; //FIXME
       }
     }
-
+ 
     // Put watchdog reset handler here.
     break;
   case (1 << BORF):
@@ -165,8 +150,8 @@ static void ResetHandler(void)
     break;
   }
 }
-
-
+ 
+ 
 /*! \brief Initializes I/O ports.
  *
  *  Initializes I/O ports.
@@ -175,15 +160,15 @@ static void InitPorts(void)
 {
   // Init DRIVE_DDR for motor driving.
   DRIVE_DDR = (1 << UL) | (1 << UH) | (1 << VL) | (1 << VH) | (1 << WL) | (1 << WH);
-
+ 
   // Init PORTD for PWM on PD5.
   DDRD = (1 << PD5);
-
+ 
   // Disable digital input buffers on ADC channels.
   DIDR0 = (1 << ADC4D) | (1 << ADC3D) | (1 << ADC2D) | (1 << ADC1D) | (1 << ADC0D);
 }
-
-
+ 
+ 
 /*! \brief Initializes timers (for commutation timing and PWM).
  *
  *  This function initializes Timer/counter0 for PWM operation for motor speed control
@@ -197,12 +182,12 @@ static void InitTimers(void)
   OCR0A = PWM_TOP_VALUE;
   TIFR0 = TIFR0;
   TIMSK0 = (0 << TOIE0);
-
+ 
   // Set up Timer/counter1 for commutation timing, prescaler = 8.
   TCCR1B = (1 << CS11) | (0 << CS10);
 }
-
-
+ 
+ 
 /*! \brief Initializes the AD-converter.
  *
  *  This function initializes the AD-converter and makes a reading of the external
@@ -215,16 +200,16 @@ static void InitADC(void)
   ADCSRA = (1 << ADEN) | (1 << ADSC) | (1 << ADIF) | (ADC_PRESCALER_16);
   while (ADCSRA & (1 << ADSC))
   {
-
+ 
   }
   referenceVoltageADC = ADCH;
-
+ 
   // Initialize the ADC for autotriggered operation on PWM timer overflow.
   ADCSRA = (1 << ADEN) | (0 << ADSC) | (1 << ADATE) | (1 << ADIF) | (0 << ADIE) | ADC_PRESCALER_8;
   ADCSRB = ADC_TRIGGER_SOURCE;
 }
-
-
+ 
+ 
 /*! \brief Initializes the analog comparator.
  *
  *  This function initializes the analog comparator for overcurrent detection.
@@ -236,24 +221,24 @@ static void InitAnalogComparator(void)
   ACSR = (0 << ACBG) | (1 << ACI) | (1 << ACIE) | (1 << ACIS1) | (1 << ACIS0);
 #endif
 }
-
-
+ 
+ 
 /*! \brief Initializes the watchdog timer
  *
  *  This function initializes the watchdog timer for stall restart.
  */
 static void WatchdogTimerEnable(void)
 {
-  __disable_interrupt();
-  __watchdog_reset();
-
+  cli();
+  wdt_reset();
+ 
   WDTCSR |= (1 << WDCE) | (1 << WDE);
-
+ 
   WDTCSR = (1 << WDIF) | (1 << WDIE) | (1 << WDE) | (1 << WDP2);
-  __enable_interrupt();
+  sei();
 }
-
-
+ 
+ 
 /*! \brief Initializes arrays for motor driving and AD channel selection.
  *
  *  This function initializes the arrays used for motor driving and AD channel
@@ -268,7 +253,7 @@ static void MakeTables(void)
   driveTable[3] = DRIVE_PATTERN_STEP4_CCW;
   driveTable[4] = DRIVE_PATTERN_STEP5_CCW;
   driveTable[5] = DRIVE_PATTERN_STEP6_CCW;
-
+ 
   ADMUXTable[0] = ADMUX_W;
   ADMUXTable[1] = ADMUX_V;
   ADMUXTable[2] = ADMUX_U;
@@ -282,27 +267,27 @@ static void MakeTables(void)
   driveTable[3] = DRIVE_PATTERN_STEP4_CW;
   driveTable[4] = DRIVE_PATTERN_STEP5_CW;
   driveTable[5] = DRIVE_PATTERN_STEP6_CW;
-
+ 
   ADMUXTable[0] = ADMUX_U;
   ADMUXTable[1] = ADMUX_V;
   ADMUXTable[2] = ADMUX_W;
   ADMUXTable[3] = ADMUX_U;
   ADMUXTable[4] = ADMUX_V;
   ADMUXTable[5] = ADMUX_W;
-
+ 
 #endif
-
+ 
   startupDelays[0] = 200;
   startupDelays[1] = 150;
   startupDelays[2] = 100;
   startupDelays[3] = 80;
   startupDelays[4] = 70;
   startupDelays[5] = 65;
-  startupDelays[6] = 60;
-  startupDelays[7] = 55;
+  //startupDelays[6] = 60;
+  //startupDelays[7] = 55;
 }
-
-
+ 
+ 
 /*! \brief Executes the motor startup sequence.
  *
  *  This function locks the motor into a known position and fires off a
@@ -311,44 +296,46 @@ static void MakeTables(void)
 static void StartMotor(void)
 {
   unsigned char i;
-
+ 
   SET_PWM_COMPARE_VALUE(STARTUP_PWM_COMPARE_VALUE);
-
-  nextCommutationStep = 0;
-
+  
+  nextCommutationStep = 1;
+  
   //Preposition.
   DRIVE_PORT = driveTable[nextCommutationStep];
+  
   StartupDelay(STARTUP_LOCK_DELAY);
   nextCommutationStep++;
   nextDrivePattern = driveTable[nextCommutationStep];
 
+  for (;;){
   for (i = 0; i < STARTUP_NUM_COMMUTATIONS; i++)
   {
     DRIVE_PORT = nextDrivePattern;
     StartupDelay(startupDelays[i]);
-
+	 //StartupDelay(50);
     ADMUX = ADMUXTable[nextCommutationStep];
-
+ 
     // Use LSB of nextCommutationStep to determine zero crossing polarity.
     zcPolarity = nextCommutationStep & 0x01;
-
+ 
     nextCommutationStep++;
     if (nextCommutationStep >= 6)
     {
       nextCommutationStep = 0;
     }
     nextDrivePattern = driveTable[nextCommutationStep];
-  }
-
+  }}
+ 
   // Switch to sensorless commutation.
   TCNT1 = 0;
   TIMSK1 = (1 << OCIE1A);
-
+ 
   // Set filteredTimeSinceCommutation to the time to the next commutation.
   filteredTimeSinceCommutation = startupDelays[STARTUP_NUM_COMMUTATIONS - 1] * (STARTUP_DELAY_MULTIPLIER  / 2);
 }
-
-
+ 
+ 
 /*! \brief Timer/counter0 bottom overflow. Used for zero-cross detection.
  *
  *  This interrupt service routine is called every time the up/down counting
@@ -360,62 +347,61 @@ static void StartMotor(void)
  *  and Timer/counter1 compare A is set up to trigger at the next commutation
  *  instant.
  */
-#pragma vector=TIMER0_OVF_vect
-__interrupt void MotorPWMBottom()
+ISR(TIMER0_OVF_vect)
 {
   unsigned char temp;
-
+ 
   // Disable ADC auto-triggering. This must be done here to avoid wrong channel being sampled on manual samples later.
   ADCSRA &= ~((1 << ADATE) | (1 << ADIE));
-
+ 
   // Wait for auto-triggered ADC sample to complete.
   while (!(ADCSRA & (1 << ADIF)))
   {
-
+ 
   }
   temp = ADCH;
   if (((zcPolarity == EDGE_RISING) && (temp > ADC_ZC_THRESHOLD)) || ((zcPolarity == EDGE_FALLING) && (temp < ADC_ZC_THRESHOLD)))
   {
     unsigned int timeSinceCommutation;
-
+ 
     // Find time since last commutation
     timeSinceCommutation = TCNT1;
     TCNT1 = COMMUTATION_CORRECTION;
-
+ 
     // Filter the current ZC detection with earlier measurements through an IIR filter.
     filteredTimeSinceCommutation = (COMMUTATION_TIMING_IIR_COEFF_A * timeSinceCommutation
                                 + COMMUTATION_TIMING_IIR_COEFF_B * filteredTimeSinceCommutation)
                                 / (COMMUTATION_TIMING_IIR_COEFF_A + COMMUTATION_TIMING_IIR_COEFF_B);
     OCR1A = filteredTimeSinceCommutation;
-
+ 
     speedUpdated = TRUE;
-
+ 
     SET_TIMER1_INT_COMMUTATION;
     CLEAR_ALL_TIMER1_INT_FLAGS;
-
+ 
     // Disable Timer/Counter0 overflow ISR.
     DISABLE_ALL_TIMER0_INTS;
-
+ 
     // Read speed reference.
-
+ 
     // Make sure that a sample is not in progress.
     while (ADCSRA & (1 << ADSC))
     {
-
+ 
     }
     // Change channel
     ADMUX = ADMUX_SPEED_REF;
-
+ 
     // Start conversion manually.
     ADCSRA |= (1 << ADSC);
-
+ 
     // Wait for conversion to complete.
     while((ADCSRA & (1 << ADSC)))
     {
-
+ 
     }
     speedReferenceADC = ADCH;
-
+ 
     // Read voltage reference.
     // Change ADC channel.
     ADMUX = ADMUX_REF_VOLTAGE;
@@ -424,10 +410,10 @@ __interrupt void MotorPWMBottom()
     // Wait for conversion to complete.
     while((ADCSRA & (1 << ADSC)))
     {
-
+ 
     }
     referenceVoltageADC = ADCH;
-
+ 
     // Enable current measurements in ADC ISR.
     ADMUX = ADMUX_CURRENT;
     ADCSRA |= (1 << ADATE) | (1 << ADIE) | ADC_PRESCALER;
@@ -435,37 +421,37 @@ __interrupt void MotorPWMBottom()
   else
   {
     unsigned char tempADMUX;
-
+ 
     tempADMUX = ADMUX;
     // Read current
-
+ 
     // Make sure that a sample is not in progress
     while (ADCSRA & (1 << ADSC))
     {
-
+ 
     }
-
+ 
     // Change channel
     ADMUX = ADMUX_CURRENT;
-
+ 
     // Start conversion manually.
     ADCSRA |= (1 << ADSC);
     // Wait for conversion to complete.
     while((ADCSRA & (1 << ADSC)))
     {
-
+ 
     }
-
+ 
     shuntVoltageADC = ADCH;
     currentUpdated = TRUE;
-
+ 
     // Restore ADC channel.
     ADMUX = tempADMUX;
     ADCSRA |= (1 << ADATE) | (1 << ADIE) | ADC_PRESCALER;
   }
 }
-
-
+ 
+ 
 /*! \brief Commutates and prepares for new zero-cross detection.
  *
  *  This interrupt service routine is triggered exactly when a commutation
@@ -478,24 +464,23 @@ __interrupt void MotorPWMBottom()
  *  compare B. The compare is set to happen after the specified hold-off period.
  *  Timer/counter1 compare B interrupt handler then enables the zero-cross detection.
  */
-#pragma vector=TIMER1_COMPA_vect
-__interrupt void Commutate()
+ISR(TIMER1_COMPA_vect)
 {
   // Commutate and clear commutation timer.
   DRIVE_PORT = nextDrivePattern;
   TCNT1 = 0;
-
+ 
   zcPolarity = nextCommutationStep & 0x01;
-
+ 
   // Set zero-cross detection holdoff time.
   CLEAR_ALL_TIMER1_INT_FLAGS;
   OCR1B = ZC_DETECTION_HOLDOFF_TIME_US;
   SET_TIMER1_INT_HOLDOFF;
-
-  __watchdog_reset();
+ 
+  wdt_reset();
 }
-
-
+ 
+ 
 /*! \brief Enables zero-cross detection.
  *
  *  This interrupt service routine is triggered when the zero cross detection
@@ -503,26 +488,25 @@ __interrupt void Commutate()
  *  disabled and Timer/counter0 (PWM) overflow interrupt is enabled to allow
  *  the ADC readings to be used for zero-cross detection.
  */
-#pragma vector=TIMER1_COMPB_vect
-__interrupt void EnableZCDetection()
+ISR(TIMER1_COMPB_vect)
 {
   // Enable TCNT0 overflow ISR.
   CLEAR_ALL_TIMER0_INT_FLAGS;
   CLEAR_ALL_TIMER1_INT_FLAGS;
   SET_TIMER0_INT_ZC_DETECTION;
   DISABLE_ALL_TIMER1_INTS;
-
+ 
   // Set up ADC for zero-cross detection
   ADMUX = ADMUXTable[nextCommutationStep];
-
+ 
   // Wait for ADC to complete
   while (!(ADCSRA & (1 << ADIF)))
   {
-
+ 
   }
   ADCSRA &= ~(1 << ADIE);
   ADCSRA |= (1 << ADSC) | (1 << ADATE);
-
+ 
   // Rotate commutation step counter.
   nextCommutationStep++;
   if (nextCommutationStep >= 6)
@@ -531,8 +515,8 @@ __interrupt void EnableZCDetection()
   }
   nextDrivePattern = driveTable[nextCommutationStep];
 }
-
-
+ 
+ 
 /* \brief ADC complete interrupt service routine, used for current measurements.
  *
  *  This interrupt service routine is only enabled when current measurements are
@@ -540,23 +524,21 @@ __interrupt void EnableZCDetection()
  *  copied to \ref shuntVoltageADC, the \ref currentUpdated flag is set and
  *  Timer0 (PWM timer) interrupt flags are cleared.
  */
-#pragma vector=ADC_vect
-__interrupt void CurrentMeasurementComplete()
+ISR(ADC_vect)
 {
   shuntVoltageADC = ADCH;
   currentUpdated = TRUE;
   CLEAR_ALL_TIMER0_INT_FLAGS;
 }
-
-
+ 
+ 
 /*! \brief Watchdog interrupt
  *
  *  This ISR is called before the watchdog timer resets the device because of a stall.
  *  It simply disables driving, but other tasks that must be done before a watchdog reset,
  *  such as storage of variables in non-volatile memory can be done here.
  */
-#pragma vector=WDT_vect
-__interrupt void WatchdogISR()
+ISR(WDT_vect)
 {
   DISABLE_DRIVING;
   for(;;)
@@ -564,15 +546,14 @@ __interrupt void WatchdogISR()
     ;
   }
 }
-
+ 
 /*! \brief Overcurrent interrupt
  *
  *  This interrupt service routine cuts power to the motor when an overcurrent situation
  *  is detected.
  */
 #ifdef ANALOG_COMPARATOR_ENABLE
-#pragma vector=ANA_COMP_vect
-__interrupt void OverCurrentISR()
+ISR(ANA_COMP_vect)
 {
   DISABLE_DRIVING;
   for(;;)
@@ -581,8 +562,8 @@ __interrupt void OverCurrentISR()
   }
 }
 #endif
-
-
+ 
+ 
 /*! \brief Generates a delay used during startup
  *
  *  This functions is used to generate a delay during the startup procedure.
@@ -599,16 +580,16 @@ void StartupDelay(unsigned int delay)
     // Wait for timer to overflow.
     while (!(TIFR1 & (1 << TOV1)))
     {
-
+ 
     }
-
+ 
     CLEAR_ALL_TIMER1_INT_FLAGS;
     delay--;
   } while (delay);
 }
-
-
-
+ 
+ 
+ 
 #ifdef SPEED_CONTROL_CLOSED_LOOP
 /*! \brief Controls the PWM duty cycle based on speed set-point and current consumption.
  *
@@ -621,7 +602,7 @@ static void PWMControl(void)
   signed int speedCompensation;
   static unsigned char currentCompensation = 0;
   static signed int duty = STARTUP_PWM_COMPARE_VALUE;
-
+ 
   // Run speed control only if a new speed measurement is available.
  if (speedUpdated)
   {
@@ -629,14 +610,14 @@ static void PWMControl(void)
     speedUpdated = FALSE;
     duty += speedCompensation;
   }
-
+ 
   // Run current control only if a new current measurement is available.
   if (currentUpdated)
   {
      currentCompensation = CurrentControl();
      currentUpdated = FALSE;
   }
-
+ 
  // Keep duty cycle within limits.
   if (duty < MIN_PWM_COMPARE_VALUE)
   {
@@ -646,11 +627,11 @@ static void PWMControl(void)
   {
     duty = MAX_PWM_COMPARE_VALUE - currentCompensation;
   }
-
+ 
   SET_PWM_COMPARE_VALUE((unsigned char)duty);
 }
 #endif
-
+ 
 #ifdef SPEED_CONTROL_OPEN_LOOP
 static void PWMControl(void)
 {
@@ -662,8 +643,8 @@ static void PWMControl(void)
   }
 }
 #endif
-
-
+ 
+ 
 /*! \brief Calculates the current speed in electrical RPM.
  *
  *  This function calculates the current speed in electrical rotations per
@@ -675,26 +656,26 @@ static unsigned long CalculateSpeed()
   unsigned int filteredTimeSinceCommutationCopy;
   unsigned long rotationPeriod;
   unsigned long speed;
-
+ 
   /*
   Disable interrupts to ensure that \ref filteredTimeSinceCommutation is accessed in
   an atomic operation.
   */
-  __disable_interrupt();
+  cli();
   filteredTimeSinceCommutationCopy = filteredTimeSinceCommutation;
-  __enable_interrupt();
-
+  sei();
+ 
   /*
   filteredTimeSinceCommutation is one half commutation time. Must be multiplied by 12 to get
   one full rotation.
   */
   rotationPeriod = (unsigned long)filteredTimeSinceCommutationCopy * 12;
   speed = (TICKS_PER_MINUTE / rotationPeriod);
-
+ 
   return speed;
 }
-
-
+ 
+ 
 /*! \brief Calculates the speed set-point in electrical RPM.
  *
  *  This function calculates the speed set-point from the global variable
@@ -708,8 +689,8 @@ static unsigned long CalculateSpeedSetpoint()
 {
   return (MIN_SPEED + ((MAX_SPEED - MIN_SPEED) * (unsigned int)speedReferenceADC) / ADC_RESOLUTION);
 }
-
-
+ 
+ 
 /*! \brief Calculates current consumption.
  *
  *  This function calculates the current consumption in milliAmperes from the
@@ -720,18 +701,18 @@ static unsigned int CalculateCurrent()
 {
   unsigned long ADCref;
   unsigned int current;
-
+ 
   // Calculate the voltage at AREF pin (scaled down motor supply voltage),
   // using the known reference voltage. (In milliVolts)
   ADCref = EXTERNAL_REF_VOLTAGE * 256UL / referenceVoltageADC;
-
+ 
   // Calculate the current through the shunt. (In milliAmperes)
   current = (unsigned int)((shuntVoltageADC * ADCref * 1000UL / 256UL) / SHUNT_RESISTANCE);
-
+ 
   return current;
 }
-
-
+ 
+ 
 /*! \brief Speed control loop
  *
  *  This function runs a simple P-regulator speed control loop. The duty cycle
@@ -745,18 +726,18 @@ static signed int SpeedControl(void)
   unsigned long currentSpeed;
   signed long speedError;
   signed long dutyChange;
-
-
-
+ 
+ 
+ 
   speedSetpoint = CalculateSpeedSetpoint();
   currentSpeed = CalculateSpeed();
   speedError = (speedSetpoint - currentSpeed);
   dutyChange = speedError * P_REG_K_P / P_REG_SCALING;
-
+ 
   return dutyChange;
 }
-
-
+ 
+ 
 /*! \brief Current control loop
  *
  *  This function is called after the speed control loop. The desired duty cycle
@@ -768,9 +749,9 @@ static unsigned char CurrentControl(void)
 {
   unsigned int current;
   unsigned int overCurrentCorrection = 0;
-
+ 
   current = CalculateCurrent();
-
+ 
   // Cut power to motor if current is critically high.
   if (current > CURRENT_LIMITER_CRITICAL)
   {
@@ -780,20 +761,20 @@ static unsigned char CurrentControl(void)
       // Stop and let watchdog timer reset part.
     }
   }
-
+ 
   if (current > CURRENT_LIMITER_START)
   {
     overCurrentCorrection = (current - CURRENT_LIMITER_START) * CURRENT_LIMITER_FACTOR;
   }
-
+ 
   if (overCurrentCorrection > 255)
   {
     return 255;
   }
-
+ 
   return overCurrentCorrection;
 }
-
+ 
 /*! \mainpage
  * \section Intro Introduction
  * This documents data structures, functions, variables, defines, enums, and
@@ -816,5 +797,3 @@ static unsigned char CurrentControl(void)
  * \section DI Device Info
  * The included source code is written for ATmega48/88/168.
  */
-
-

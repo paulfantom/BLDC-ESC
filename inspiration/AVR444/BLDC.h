@@ -1,33 +1,11 @@
-// This file has been prepared for Doxygen automatic documentation generation.
-/*! \file ********************************************************************
-*
-* Atmel Corporation
-*
-* - File              : BLDC.h
-* - Compiler          : IAR EWAAVR 2.28a/3.10c
-*
-* - Support mail      : avr@atmel.com
-*
-* - Supported devices : ATmega48/88/168
-*
-* - AppNote           : AVR444 - Sensorless control of three-phase brushless
-'                       DC motors with ATmega48.
-*
-* - Description       : Example of how to use the ATmega48 for sensorless
-*                       control of a three phase brushless DC motor.
-*
-* $Revision: 1.1 $
-* $Date: Monday, October 10, 2005 11:15:46 UTC $
-*****************************************************************************/
-
 #ifndef __BLDC_H__
 #define __BLDC_H__
 
 //! System clock frequecy. Used to calculate PWM TOP value.
-#define SYSTEM_FREQUENCY        8000000
+#define SYSTEM_FREQUENCY        16000000
 
 //! PWM base frequency. Used to calculate PWM TOP value.
-#define PWM_BASE_FREQUENCY      20000
+#define PWM_BASE_FREQUENCY      40000
 
 //! PWM TOP value. Automatically calculated to give desired \ref PWM_BASE_FREQUENCY.
 #define PWM_TOP_VALUE           (SYSTEM_FREQUENCY / PWM_BASE_FREQUENCY / 2)
@@ -183,7 +161,7 @@
  *  size of \ref startupDelays. Do not change without also changing
  *  \ref MakeTables().
  */
-#define STARTUP_NUM_COMMUTATIONS  8
+#define STARTUP_NUM_COMMUTATIONS  6
 
 //! Startup delays are given in milliseconds times STARTUP_DELAY_MULTIPLIER.
 #define STARTUP_DELAY_MULTIPLIER  100
@@ -192,7 +170,8 @@
  *  Number of milliseconds to lock rotor in first commutation step before
  *  the timed startup sequence is initiated.
  */
-#define STARTUP_LOCK_DELAY        10000
+//#define STARTUP_LOCK_DELAY        10000
+#define STARTUP_LOCK_DELAY        10
 
 //! The maximum number of restart attempts without external action when stall is detected.
 #define MAX_RESTART_ATTEMPTS    10
