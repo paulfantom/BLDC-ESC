@@ -2,7 +2,7 @@
 #define __BLDC_H__
 
 //! System clock frequecy. Used to calculate PWM TOP value.
-#define SYSTEM_FREQUENCY        16000000
+#define SYSTEM_FREQUENCY        12000000
 
 //! PWM base frequency. Used to calculate PWM TOP value.
 #define PWM_BASE_FREQUENCY      40000

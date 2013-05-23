@@ -68,22 +68,22 @@ uint16_t update_timing(uint16_t tIn)
   
   tcnt1_sav = readTimer1(); //stop timer1 and get present value
   tIn += tcnt1_sav;
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
   TIMSK1 = (1 << TOIE1);	//stop compare interrupt
-#else
-  TIMSK = (1 << TOIE1) | (1 << TOIE2); //stop compare interrupt
-#endif
+//#else
+//  TIMSK = (1 << TOIE1) | (1 << TOIE2); //stop compare interrupt
+//#endif
   OCR1AH = (tIn>>8) & 0xFF; //  set compare registers = tInput
   OCR1AL = tIn & 0xFF;
   SET_FLAG(OCT1_PENDING);
 
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
   TIMSK1 = (1 << TOIE1) | (1 << OCIE1A); // enable interrupt again
-#else
-  TIMSK = (1 << TOIE1) | (1 << OCIE1A) | (1 << TOIE2); // enable interrupt again
-#endif
+//#else
+//  TIMSK = (1 << TOIE1) | (1 << OCIE1A) | (1 << TOIE2); // enable interrupt again
+//#endif
 
   if((timing & 0xFFFF0000)) //if timing > 0xFFFF
   {
@@ -152,23 +152,23 @@ void calc_governer()
 void commutationDelay()
 {
   unsigned int tmp = readTimer1();
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
   TIMSK1 = (1 << TOIE1);	//stop compare interrupt
-#else
-  TIMSK = (1 << TOIE1) | (1 << TOIE2); //stop compare interrupt
-#endif
+//#else
+//  TIMSK = (1 << TOIE1) | (1 << TOIE2); //stop compare interrupt
+//#endif
 
   tmp += wt_comp_scan; //set compare register to next commutation time
   OCR1AH = tmp>>8;
   OCR1AL = tmp & 0xFF;
   SET_FLAG(OCT1_PENDING);
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+ //   defined(__AVR_ATmega168__)
   TIMSK1 = (1 << OCIE1A) | (1 << TOIE1);	// start compare interrupt
-#else
-  TIMSK = (1 << OCIE1A) | (1 << TOIE1) | (1 << TOIE2);
-#endif
+//#else
+//  TIMSK = (1 << OCIE1A) | (1 << TOIE1) | (1 << TOIE2);
+//#endif
   
   evaluate_rpm();
   
@@ -277,22 +277,22 @@ void syncPowerOn()
 void set_OCT1_tot()
 {
   unsigned int tmp = readTimer1();
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
   TIMSK1 = (1 << TOIE1);	//stop compare interrupt
-#else
-  TIMSK = (1 << TOIE1) | (1 << TOIE2); //stop compare interrupt
-#endif
+//#else
+//  TIMSK = (1 << TOIE1) | (1 << TOIE2); //stop compare interrupt
+//#endif
   tmp += zero_wt;
   OCR1AH = tmp >>8;
   OCR1AL = tmp & 0xFF;
   SET_FLAG(OCT1_PENDING);
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
   TIMSK1 = (1 << OCIE1A) | (1 << TOIE1);	// start compare interrupt
-#else
-  TIMSK = (1 << OCIE1A) | (1 << TOIE1) | (1 << TOIE2);
-#endif
+//#else
+//  TIMSK = (1 << OCIE1A) | (1 << TOIE1) | (1 << TOIE2);
+//#endif
 }
 
 

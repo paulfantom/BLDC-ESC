@@ -132,24 +132,24 @@ char startStep()
    
   unsigned int tmp = readTimer1();
 
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
   TIMSK1 = (1 << TOIE1);
   TIMSK2 = (1 << TOIE2);
-#else
-  TIMSK = (1 << TOIE1) | (1 << TOIE2);
-#endif
+//#else
+//  TIMSK = (1 << TOIE1) | (1 << TOIE2);
+//#endif
   tmp += 1000;
   OCR1AH = tmp >>8;
   OCR1AL = tmp & 0xFF;
   SET_FLAG(OCT1_PENDING);
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
   TIMSK1 = (1 << TOIE1) | (1 << OCIE1A);
   TIMSK2 = (1 << TOIE2);
-#else
-  TIMSK = (1 << TOIE1) | (1 << OCIE1A) | (1 << TOIE2);
-#endif
+//#else
+//  TIMSK = (1 << TOIE1) | (1 << OCIE1A) | (1 << TOIE2);
+//#endif
   WAIT_OCT1_TOT;
     
   return FLAG(COMP_HI);

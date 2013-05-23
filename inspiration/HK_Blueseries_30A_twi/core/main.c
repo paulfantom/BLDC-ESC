@@ -77,7 +77,8 @@ void setup(void)
   TIMSK1 = 0;
   TIMSK2 = 0;
 #else
-  TIMSK = 0;
+//  TIMSK = 0;
+  TIMSK1 = 0;	//FIXME
 #endif
   
     if(&ApFET_port == &PORTB) 
@@ -133,7 +134,8 @@ void setup(void)
     defined(__AVR_ATmega168__)
     ADCSRB |= (1<<ACME);
 #else
-    SFIOR |= (1<<ACME);
+	ADCSRB |= (1<<ACME);	//FIXME
+    //SFIOR |= (1<<ACME);
 #endif
 
 //  start timer2 with CK/8 (0.5us/count  for a 16MHz clk)
@@ -141,7 +143,8 @@ void setup(void)
     defined(__AVR_ATmega168__)
     TCCR2B = (1 << CS21);
 #else
-    TCCR2 = (1 << CS21);
+	TCCR2B = (1 << CS21);	//FIXME
+    //TCCR2 = (1 << CS21);
 #endif
 
 // start timer1 with CK/8 (0.5us/count  for a 16MHz clk) 
@@ -188,13 +191,13 @@ void setup(void)
    
     switch_power_off();
     // init registers and interrupts
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\	//FIXME
+//    defined(__AVR_ATmega168__)
     TIFR1 = TIMSK1 = (1<<TOIE1) | (1<<OCIE1A);	// Enable the timer1 interrupts we use in the code
     TIFR2 = TIMSK2 = (1<<TOIE2);		// Enable the timer2 interrupts we use in the code
-#else
-    TIFR = TIMSK = (1<<TOIE1) | (1<<OCIE1A) | (1<<TOIE2); // Enable the 3 interrupts we use in the code
-#endif
+//#else
+//    TIFR = TIMSK = (1<<TOIE1) | (1<<OCIE1A) | (1<<TOIE2); // Enable the 3 interrupts we use in the code
+//#endif
 
     set_all_timings();
     SEI; //Enable all interrupts

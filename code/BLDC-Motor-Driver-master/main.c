@@ -15,16 +15,16 @@
 #define STATE(u, v, w) \
   (((u) << 4) | ((v) << 2) | (w))
 
-#define DRV_PORT  PORTA
-#define DRV_MASK  0b11111100
+#define DRV_PORT  PORTB
+#define DRV_MASK  0b00111111
 #define DRV_SHIFT 2
 
-#define BEMF_UPORT PINA
-#define BEMF_VPORT PINB
+#define BEMF_UPORT PINC
+#define BEMF_VPORT PINC
 #define BEMF_WPORT PINC
-#define BEMF_U 1
-#define BEMF_V 6
-#define BEMF_W 0
+#define BEMF_U 0
+#define BEMF_V 1
+#define BEMF_W 2
 
 /* time limit before stall-handler is activated */
 #define COM_PERIOD_MAX 1000 /* 6 comm/cycle * 1000 ticks/comm * 100us/tick = 300ms/cycle, or ~1.66Hz = 100RPM */
@@ -100,12 +100,12 @@ ISR(TIMER0_COMPA_vect) {
 }
 
 void init_ports() {
-    DDRA  = 0b11111100;
-    PORTA = 0b10101000;
-    DDRB  = 0b00001000;
-    PORTB = 0b00001000;
+//    DDRA  = 0b11111100;
+    DDRB  = 0b00111111;
+    PORTB = 0b00000000;
 
-    GIMSK  = _BV(PCIE0)  | _BV(PCIE1);  /* enable pin-change interrupts */
+//    GIMSK  = _BV(PCIE0)  | _BV(PCIE1);  /* enable pin-change interrupts */		//FIXME
+    EICRA  = _BV(PCIE0)  | _BV(PCIE1);  /* enable pin-change interrupts */
     PCMSK0 = _BV(PCINT0) | _BV(PCINT1);
     PCMSK1 = _BV(PCINT14);
 }
@@ -115,15 +115,17 @@ void init_timers() {
     TCCR0A = _BV(WGM00);  /* Clear timer on compare match mode */
     TCCR0B = _BV(CS01);   /* clk/8 prescale factor */
     OCR0A  = 250;         /* 250 / (20MHz / 8) = 100us */
-    TIMSK  = _BV(OCIE0A); /* Enable compare match A interrupt */
+    TIMSK0  = _BV(OCIE0A); /* Enable compare match A interrupt */		//FIXME
 }
 
 void spinup() {
     uint16_t stimer, time;
 
     spintimer = 0;
-    for (uint16_t i=0; i<SPINUP_TIMINGS_SIZE; i++) {
-        time = pgm_read_word(spinup_timings + i);
+	 uint16_t i;
+    for (i=0; i<SPINUP_TIMINGS_SIZE; i++) {
+        //time = pgm_read_word(spinup_timings + i);
+		 time=32000;
         for (;;) {
             ATOMIC_BLOCK(ATOMIC_FORCEON) {
                 stimer = spintimer;
@@ -132,10 +134,10 @@ void spinup() {
 
             wdt_reset();
         }
-
         waveindex = (waveindex + 1) % 6;
         bldc_waveout(waveindex);
     }
+
 }
 
 int main(void) {
@@ -145,12 +147,13 @@ int main(void) {
     init_timers();
 
     /* clear flags and enable interrupts */
-    TIFR = _BV(OCF0A); /* timer 0 output compare A */
-    GIFR = _BV(PCIF);  /* pin-change interrupt */
+    TIFR0 = _BV(OCF0A); /* timer 0 output compare A */		//FIXME
+//    GIFR = _BV(PCIF);  /* pin-change interrupt */		//FIXME		//FIXME
+    EIFR = _BV(PCIFR);  /* pin-change interrupt */		//FIXME		//FIXME
     sei(); /* enable interrupts */
 
     for (;;) {
-        ATOMIC_BLOCK(ATOMIC_FORCEON) {
+        ATOMIC_BLOCK(ATOMIC_FORCEON) {		//FIXME
             ctimer = commtimer;
         }
         if (ctimer > COM_PERIOD_MAX)
@@ -161,5 +164,5 @@ int main(void) {
             stalled = 0;
         }
         wdt_reset();
-    }
+	}
 }

@@ -4,7 +4,7 @@
 #ifndef _PARAMETERS_H
 #define _PARAMETERS_H
 
-#define F_CPU	16000000L
+#define F_CPU	12000000L
 #define VERSION	(0x27)
 //#define   SKIP_BEEP
 #define   INPUT_RANGE     (0xFF)
@@ -56,21 +56,21 @@
 //*********************
 // PORT C definitions
 //*********************
-#define	ApFET_port      PORTC
+#define	ApFET_port      PORTB
 
-#define	ApFET_pin	3
+#define	ApFET_pin	1
 
 //*********************
 // PORT D definitions
 //*********************  
-#define	CpFET_port      PORTD
-#define	CnFET_port      PORTD
-#define	BpFET_port      PORTD
-#define	BnFET_port      PORTD
+#define	CpFET_port      PORTB
+#define	CnFET_port      PORTB
+#define	BpFET_port      PORTB
+#define	BnFET_port      PORTB
 
 #define	CpFET_pin	4
 #define	CnFET_pin	5
-#define	BpFET_pin	7
+#define	BpFET_pin	2
 #define	BnFET_pin	3
 
 //*********************

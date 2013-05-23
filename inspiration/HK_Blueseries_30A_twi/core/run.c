@@ -107,12 +107,12 @@ void com2com3()
 {
   phase=2;
   //Stop timer2 interrupt
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\	//FIXME
+//    defined(__AVR_ATmega168__)
   TIMSK2 = 0;
-#else
-  TIMSK = (1<<OCIE1A) | (1<<TOIE1);
-#endif
+//#else
+//  TIMSK = (1<<OCIE1A) | (1<<TOIE1);
+//#endif
   NOP;
   CLEAR_FLAG(A_FET);
   CLEAR_FLAG(C_FET);
@@ -122,12 +122,12 @@ void com2com3()
    {
       BnFET_on;
    }
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
   TIMSK2 = (1<<TOIE2);
-#else
-  TIMSK = (1<<TOIE1) | (1<<OCIE1A) | (1<<TOIE2);
-#endif
+//#else
+//  TIMSK = (1<<TOIE1) | (1<<OCIE1A) | (1<<TOIE2);
+//#endif
   ADMUX = mux_c;
 }
 
@@ -146,12 +146,12 @@ void com4com5()
 {
   phase=4;
   //Stop timer2 interrupt
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\	FIXME
+//    defined(__AVR_ATmega168__)
   TIMSK2 = 0;
-#else
-  TIMSK = (1<<OCIE1A) | (1<<TOIE1) ;
-#endif
+//#else
+//  TIMSK = (1<<OCIE1A) | (1<<TOIE1) ;
+//#endif
   NOP;
   SET_FLAG(A_FET);
   CLEAR_FLAG(C_FET);
@@ -161,12 +161,12 @@ void com4com5()
    {
       AnFET_on;
     }
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
-  TIMSK2 = (1<<TOIE2);
-#else
-  TIMSK = (1<<TOIE1) | (1<<OCIE1A) | (1<<TOIE2);
-#endif
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
+//    defined(__AVR_ATmega168__)
+//  TIMSK2 = (1<<TOIE2);
+//#else
+//  TIMSK = (1<<TOIE1) | (1<<OCIE1A) | (1<<TOIE2);
+//#endif
   ADMUX = mux_b;
 }
 
@@ -185,12 +185,12 @@ void com6com1()
 {
   phase=6;
   //Stop timer2 interrupt
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\	FIXME
+//    defined(__AVR_ATmega168__)
   TIMSK2 = 0;
-#else
-  TIMSK = (1<<OCIE1A) | (1<<TOIE1) ;
-#endif
+//#else
+//  TIMSK = (1<<OCIE1A) | (1<<TOIE1) ;
+//#endif
   NOP;
   CLEAR_FLAG(A_FET);
   SET_FLAG(C_FET);
@@ -200,12 +200,12 @@ void com6com1()
    {
      CnFET_on;
    }
-#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\
-    defined(__AVR_ATmega168__)
+//#if defined(__AVR_ATmega48__) || defined(__AVR_ATmega88__) ||\	FIXME
+//    defined(__AVR_ATmega168__)
   TIMSK2 = (1<<TOIE2);
-#else
-  TIMSK = (1<<TOIE1) | (1<<OCIE1A) | (1<<TOIE2);
-#endif
+//#else
+//  TIMSK = (1<<TOIE1) | (1<<OCIE1A) | (1<<TOIE2);
+//#endif
   ADMUX = mux_a;
 }
 

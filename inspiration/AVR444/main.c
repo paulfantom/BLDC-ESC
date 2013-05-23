@@ -36,7 +36,7 @@ register volatile unsigned char nextDrivePattern asm("r13");
  *  The polarity of the expected zero crossing.
  *  Could be eiter \ref EDGE_FALLING or \ref EDGE_RISING.
  */
-//volatile unsigned char zcPolarity = 12;
+//volatile unsigned char zcPolarity =12;
 register volatile unsigned char zcPolarity asm("r12");
  
 /*! \brief The commutation step that starts at next commutation.
@@ -283,8 +283,8 @@ static void MakeTables(void)
   startupDelays[3] = 80;
   startupDelays[4] = 70;
   startupDelays[5] = 65;
-  //startupDelays[6] = 60;
-  //startupDelays[7] = 55;
+  startupDelays[6] = 60;
+  startupDelays[7] = 55;
 }
  
  
@@ -307,13 +307,13 @@ static void StartMotor(void)
   StartupDelay(STARTUP_LOCK_DELAY);
   nextCommutationStep++;
   nextDrivePattern = driveTable[nextCommutationStep];
-
+  
   for (;;){
   for (i = 0; i < STARTUP_NUM_COMMUTATIONS; i++)
   {
     DRIVE_PORT = nextDrivePattern;
     StartupDelay(startupDelays[i]);
-	 //StartupDelay(50);
+	 //StartupDelay(200);
     ADMUX = ADMUXTable[nextCommutationStep];
  
     // Use LSB of nextCommutationStep to determine zero crossing polarity.

@@ -9,10 +9,10 @@ core/util.c		\
 interface.c		\
 twi_slave/twi_slave.c
 
-MCU		= atmega8
-AVRDUDE_MCU	= m8
-AVRDUDE_PROGID	= stk200
-AVRDUDE_PORT	= /dev/parport0
+MCU		= atmega88pa
+AVRDUDE_MCU	= m88p
+AVRDUDE_PROGID	= usbasp
+//AVRDUDE_PORT	= /dev/parport0
 
 INC		= -I/usr/avr/include
 LIBS		= -L/usr/i686-pc-linux-gnu/avr/lib
